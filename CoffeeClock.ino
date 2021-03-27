@@ -43,7 +43,7 @@ void setup() {
 
 	// Show splash
 	lcd.setCursor(3, 0);
-	lcd.print(F("Coffee Clock V1"));
+	lcd.print(F("Coffee Clock v1"));
 	for (uint8_t g = 0; g <= 4; g++) {
 		printCoffeeGlyph(9, 1, g);  // coffee pot
 		delay(400);
@@ -67,21 +67,21 @@ void loop() {
 			case 0:
 				lcd.clear();
 				lcd.setCursor(0, 0);
-				lcd.print(F("1. Press to start"));
+				lcd.print(F("1. Press to Start"));
 				lcd.setCursor(1, 1);
 				lcd.write((uint8_t)0);  // down arrow
 				break;
 			case 1:
 				lcd.clear();
 				lcd.setCursor(0, 0);
-				lcd.print(F("2. Choose flavour"));
+				lcd.print(F("2. Choose Flavour"));
 				lcd.setCursor(10, 1);
 				lcd.write((uint8_t)0);  // down arrow
 				break;
 			case 2:
 				lcd.clear();
 				lcd.setCursor(0, 0);
-				lcd.print(F("3. Next pot"));
+				lcd.print(F("3. Next Pot"));
 				lcd.setCursor(18, 1);
 				lcd.write((uint8_t)0);  // down arrow
 				break;
