@@ -27,6 +27,7 @@ moveUpButton(10);
 
 uint32_t nextUpdateTime = 0;
 bool heartbeat = false;
+uint16_t instructionCounter = 0xFFFE;
 
 // Display
 const uint8_t
@@ -47,6 +48,7 @@ void setup() {
 		printCoffeeGlyph(9, 1, g);  // coffee pot
 		delay(400);
 	}
+	lcd.clear();
 }
 
 void loop() {
@@ -54,18 +56,45 @@ void loop() {
 
 	// If no coffee is on, show instructions
 	if (topFlavour == NO_COFFEE && botFlavour == NO_COFFEE) {
-		lcd.clear();
-		lcd.setCursor(3, 0);
-		lcd.print(F("Press to start"));
-		lcd.setCursor(1, 1);
-		lcd.write((uint8_t)0);  // down arrow
+		instructionCounter++;
+	}
+	if (instructionCounter > (2000 / 50)) {
+		uint8_t instructionState = 0;
 
 		// Wait for a customer
 		do {
-			delay(50);
-			updateButtons();
+			switch (instructionState) {
+			case 0:
+				lcd.clear();
+				lcd.setCursor(0, 0);
+				lcd.print(F("1. Press to start"));
+				lcd.setCursor(1, 1);
+				lcd.write((uint8_t)0);  // down arrow
+				break;
+			case 1:
+				lcd.clear();
+				lcd.setCursor(0, 0);
+				lcd.print(F("2. Choose flavour"));
+				lcd.setCursor(10, 1);
+				lcd.write((uint8_t)0);  // down arrow
+				break;
+			case 2:
+				lcd.clear();
+				lcd.setCursor(0, 0);
+				lcd.print(F("3. Next pot"));
+				lcd.setCursor(18, 1);
+				lcd.write((uint8_t)0);  // down arrow
+				break;
+			}
+			if (++instructionState >= 3)instructionState = 0;
+
+			for (uint16_t i = 0; i < (2000 / 50) && !startButton.isClicked(); i++) {
+				delay(50);
+				updateButtons();
+			}
 		} while (!startButton.isClicked());
 
+		instructionCounter = 0;
 		lcd.clear();
 	}
 
@@ -130,8 +159,8 @@ void swapTopAndBottom() {
 void updateDisplay() {
 	// Calculate age of coffee in minutes
 	uint32_t
-		topTime = (millis() - startTimeTop) / 1000,
-		botTime = (millis() - startTimeBot) / 1000;
+		topTime = (millis() - startTimeTop) / 60000,
+		botTime = (millis() - startTimeBot) / 60000;
 
 	// Clear really old coffee
 	// TODO move this
@@ -208,7 +237,7 @@ void displayFlavourString(uint8_t flav) {
 	} else if (flav == 1) {
 		lcd.print(F("Hazelnut"));
 	} else if (flav == 2) {
-		lcd.print(F("Vanilla"));
+		lcd.print(F("Vanilla "));
 	} else if (flav == 3) {
 		lcd.print(F("Dark    "));
 	} else if (flav == 4) {
