@@ -25,6 +25,13 @@ startButton(8),
 flavourButton(9),
 moveUpButton(10);
 
+// Timing
+const uint32_t
+BUTTON_LATENCY = 50,	// The time between button reads
+// The amount of time given to the user to read messages
+READING_TIME = 2000,
+// The amount of time given to the user to read messages, as a multiple of button reads
+READING_CYCLES = READING_TIME / BUTTON_LATENCY;
 uint32_t nextUpdateTime = 0;
 bool heartbeat = false;
 uint16_t instructionCounter = 0xFFFE;
@@ -58,7 +65,7 @@ void loop() {
 	if (topFlavour == NO_COFFEE && botFlavour == NO_COFFEE) {
 		instructionCounter++;
 	}
-	if (instructionCounter > (2000 / 50)) {
+	if (instructionCounter > READING_CYCLES) {
 		uint8_t instructionState = 0;
 
 		// Wait for a customer
@@ -88,18 +95,20 @@ void loop() {
 			}
 			if (++instructionState >= 3)instructionState = 0;
 
-			for (uint16_t i = 0; i < (2000 / 50) && !startButton.isClicked(); i++) {
-				delay(50);
+			for (uint16_t i = 0; i < READING_CYCLES && !startButton.isClicked() && !flavourButton.isClicked(); i++) {
+				delay(BUTTON_LATENCY);
 				updateButtons();
 			}
-		} while (!startButton.isClicked());
+		} while (!startButton.isClicked() && !flavourButton.isClicked());
 
 		instructionCounter = 0;
 		lcd.clear();
 	}
 
 	// Start coffee (bottom burner)
-	if (startButton.isClicked() && botFlavour == NO_COFFEE) {
+	if (startButton.isClicked() && botFlavour == NO_COFFEE ||
+		startButton.isHeld() ||
+		flavourButton.isClicked() && botFlavour == NO_COFFEE) {
 		startTimeBot = millis();
 		botFlavour = 0;
 	}
@@ -121,7 +130,7 @@ void loop() {
 		updateDisplay();
 	}
 
-	delay(50);
+	delay(BUTTON_LATENCY);
 }
 
 void initDisplay() {
@@ -160,7 +169,11 @@ void updateDisplay() {
 	// Calculate age of coffee in minutes
 	uint32_t
 		topTime = (millis() - startTimeTop) / 60000,
-		botTime = (millis() - startTimeBot) / 60000;
+		botTime = millis() - startTimeBot;
+
+	// Set flag for timer start message
+	bool startMessageBot = botTime < READING_TIME / 2;
+	botTime /= 60000;
 
 	// Clear really old coffee
 	// TODO move this
@@ -181,23 +194,31 @@ void updateDisplay() {
 		displayTimeString(topHour, topMinute);
 	} else {
 		lcd.setCursor(0, 0);
-		lcd.print(F("    -:--"));
+		lcd.print(F("    -:--  "));
 	}
 	lcd.setCursor(10, 0);
 	displayFlavourString(topFlavour);
 
 	// Bottom line
-	if (botFlavour != NO_COFFEE) {
+	if (startMessageBot) {
 		lcd.setCursor(0, 1);
 		displayGlyphByAge(1, botTime);
 		lcd.setCursor(4, 1);
-		displayTimeString(botHour, botMinute);
+		lcd.print(F("Timer Started"));
 	} else {
-		lcd.setCursor(0, 1);
-		lcd.print(F("    -:--"));
+		if (botFlavour != NO_COFFEE) {
+			lcd.setCursor(0, 1);
+			displayGlyphByAge(1, botTime);
+			lcd.setCursor(4, 1);
+			displayTimeString(botHour, botMinute);
+			lcd.print(F("  "));	// Clear whitespace after time
+		} else {
+			lcd.setCursor(0, 1);
+			lcd.print(F("    -:--  "));	// Clear whitespace after time
+		}
+		lcd.setCursor(10, 1);
+		displayFlavourString(botFlavour);
 	}
-	lcd.setCursor(10, 1);
-	displayFlavourString(botFlavour);
 
 	lcd.setCursor(19, 1);
 	lcd.print(heartbeat ? '.' : ' ');
