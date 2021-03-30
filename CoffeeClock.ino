@@ -107,10 +107,12 @@ void loop() {
 
 	// Start coffee (bottom burner)
 	if (startButton.isClicked() && botFlavour == NO_COFFEE ||
-		startButton.isHeld() ||
 		flavourButton.isClicked() && botFlavour == NO_COFFEE) {
 		startTimeBot = millis();
 		botFlavour = 0;
+	} else if (startButton.isHeld() && botFlavour != NO_COFFEE) {
+		// Cancel the timer if the button is held
+		botFlavour = NO_COFFEE;
 	}
 
 	// Flavour button
